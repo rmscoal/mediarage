@@ -1,12 +1,12 @@
 import os.path
 
-from PySide6.QtCore import QUrl, QSize, QTimer, Qt, Signal
+from PySide6.QtCore import QUrl, QSize, Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QSizePolicy, QPushButton, QFileDialog
 
-from constant.Types import Image, Video
+from constant.File import File, Image, Video
 from util.system import get_home_directory
 
 
@@ -68,10 +68,13 @@ class FileInput(QWidget):
             get_home_directory(),
             "Video Files (*.mp4 *.mkv *.avi *.mov)",
         )
+        if File.from_path(file_path) is None:
+            # TODO: Handle if file type is not supported
+            return
+
         self.onChange.emit(file_path if file_path else None)
         self.button.hide()
         self.label.hide()
-
         self._view(file_path)
 
     def _view(self, url: str | None):
@@ -81,18 +84,19 @@ class FileInput(QWidget):
             self.image.setPixmap(QPixmap())
             return
 
-        folder, filename = os.path.split(url)
+        _, filename = os.path.split(url)
         _, ext = os.path.splitext(filename)
-        ext = ext.lower().strip(".")
+        ext = ext.upper().strip(".")
 
-        if ext.upper() in [image.value for image in Image]:
+        file_type = File.from_str(ext)
+        if isinstance(file_type, Image):
             self.media.stop()
             self.video.hide()
 
             pixmap = QPixmap(url)
             self.image.setPixmap(pixmap)
             self.image.show()
-        elif ext.upper() in [video.value for video in Video]:
+        elif isinstance(file_type, Video):
             self.image.hide()
             self.image.setPixmap(QPixmap())
 
@@ -100,5 +104,6 @@ class FileInput(QWidget):
             self.media.play()
             self.video.show()
         else:
-            # TODO: Add warning message in a dialog perhaps..
+            # TODO: Add warning dialog
             pass
+

@@ -1,8 +1,10 @@
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt
 
+from components.ConvertSelection import ConvertSelection
 from components.FileInput import FileInput
 from components.ui import Text
+from constant.File import File
 
 
 class Main(QMainWindow):
@@ -28,7 +30,12 @@ class Main(QMainWindow):
             size=10, wrap=True,
         ))
 
+
+        converSelection = ConvertSelection(parent=central)
         fileInput = FileInput(parent=central)
+        fileInput.onChange.connect(lambda path: converSelection.setSource(File.from_path(path)))
+
         layout.addWidget(fileInput)
+        layout.addWidget(converSelection, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.setCentralWidget(central)

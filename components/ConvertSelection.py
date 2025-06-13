@@ -1,11 +1,17 @@
 from dataclasses import dataclass
 from typing import Dict, List, Union
 
-from PySide6.QtWidgets import QWidget, QComboBox, QHBoxLayout
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QWidget
+from PySide6.QtCore import Signal
 
 from components.ui import Text
-from constant.Types import Video, Image, File
+from constant.File import File, Image, Video
 
+
+@dataclass
+class ConvertSelectItem:
+    source: File
+    target: File
 
 class ConvertSelection(QWidget):
     @dataclass
@@ -45,67 +51,83 @@ class ConvertSelection(QWidget):
         ],
     }
 
+    # Signal
+    onSelected = Signal(object)
+
     def __init__(self, parent=None):
         super(ConvertSelection, self).__init__(parent)
 
-        self.leftComboBox = QComboBox(editable=True)
-        self.rightComboBox = QComboBox(editable=True)
+        self.sourceComboBox = QComboBox(editable=True)
+        self.targetComboBox = QComboBox(editable=True)
         self._initOptions()
-        self.leftComboBox.currentIndexChanged.connect(self.onChangeLeftComboBox)
-        self.rightComboBox.currentIndexChanged.connect(self.onChangeRightComboBox)
-        self.leftComboBox.setCurrentIndex(-1), self.rightComboBox.setCurrentIndex(-1)
+        self.sourceComboBox.setCurrentIndex(-1)
+        self.targetComboBox.setCurrentIndex(-1)
+        self.sourceComboBox.currentIndexChanged.connect(self._onChangeSource)
+        self.targetComboBox.currentIndexChanged.connect(self._onChangeTarget)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
         layout.addWidget(Text("Convert from"))
-        layout.addWidget(self.leftComboBox)
+        layout.addWidget(self.sourceComboBox)
         layout.addWidget(Text("to"))
-        layout.addWidget(self.rightComboBox)
+        layout.addWidget(self.targetComboBox)
         self.setLayout(layout)
 
     def _initOptions(self) -> None:
         curr = 0
         for option in self.OPTIONS:
-            self.leftComboBox.addItem(option.key)
-            self.leftComboBox.model().item(curr).setEnabled(False)
-            self.leftComboBox.addItems(option.children)
+            self.sourceComboBox.addItem(option.key)
+            self.sourceComboBox.model().item(curr).setEnabled(False) # type: ignore
+            self.sourceComboBox.addItems(option.children)
             curr += len(option.children) + 1
-        self.rightComboBox.clear()
+        self.targetComboBox.clear()
+
+    def setSource(self, fileType: File | None) -> None:
+        if not isinstance(fileType, File):
+            print(fileType)
+            return
+        self.sourceComboBox.setCurrentText(fileType.value)
 
     @property
-    def getSelectedLeftComboBox(self) -> Union[File, None]:
-        idx = self.leftComboBox.currentIndex()
+    def selectedSource(self) -> Union[File, None]:
+        idx = self.sourceComboBox.currentIndex()
         if idx < 0:
             return None
         selected: File | None = File.from_str(
-            self.leftComboBox.model().item(idx).text()
+            self.sourceComboBox.model().item(idx).text() # type: ignore
         )
         return selected
 
     @property
-    def getSelectedRightComboBox(self) -> Union[File, None]:
-        idx = self.rightComboBox.currentIndex()
+    def selectedTarget(self) -> Union[File, None]:
+        idx = self.targetComboBox.currentIndex()
         if idx < 0:
             return None
         selected: File | None = File.from_str(
-            self.rightComboBox.model().item(idx).text()
+            self.targetComboBox.model().item(idx).text() # type: ignore
         )
         return selected
 
-    def onChangeLeftComboBox(self, _: int):
+    def _onChangeSource(self, _: int) -> None:
         """
         As the right combo box has been chosen, we adjust the left combobox.
         """
-        self.rightComboBox.clear()
-
+        self.targetComboBox.clear()
+        if self.selectedSource is None:
+            return
         curr = 0
-        for option in self.PAIRS[self.getSelectedLeftComboBox]:
-            self.rightComboBox.addItem(option.key)
-            self.rightComboBox.model().item(curr).setEnabled(False)
-            self.rightComboBox.addItems(option.children)
+        for option in self.PAIRS[self.selectedSource]:
+            self.targetComboBox.addItem(option.key)
+            self.targetComboBox.model().item(curr).setEnabled(False) # type: ignore
+            self.targetComboBox.addItems(option.children)
             curr += len(option.children) + 1
-        self.rightComboBox.setCurrentIndex(-1)
+        self.targetComboBox.setCurrentIndex(-1)
 
-    def onChangeRightComboBox(self, _: int):
-        print("Selected Left: ", self.getSelectedLeftComboBox, " Selected Right: ", self.getSelectedRightComboBox)
+    def _onChangeTarget(self, _: int) -> None:
+        if self.selectedSource is None or self.selectedTarget is None:
+            return
+        self.onSelected.emit(ConvertSelectItem(
+            source=self.selectedSource,
+            target=self.selectedTarget,
+        ))
