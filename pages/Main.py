@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt
 
-from components.ConvertSelection import ConvertSelection
+from components.ConvertSelect import ConvertSelect
 from components.FileInput import FileInput
+from components.VideoOptions import VideoOptions
 from components.ui import Text
 from constant.File import File
 
@@ -30,12 +31,22 @@ class Main(QMainWindow):
             size=10, wrap=True,
         ))
 
+        self.convertSelection = ConvertSelect(parent=central, visible=False)  # type: ignore
+        self.videoOption = VideoOptions(parent=central, visible=False)
+        self.fileInput = FileInput(parent=central)
+        self.fileInput.onChange.connect(self._handleFileSelected)
+        self.convertSelection.onSelected.connect(self._handleConvertOptionSelected)
 
-        converSelection = ConvertSelection(parent=central)
-        fileInput = FileInput(parent=central)
-        fileInput.onChange.connect(lambda path: converSelection.setSource(File.from_path(path)))
-
-        layout.addWidget(fileInput)
-        layout.addWidget(converSelection, alignment=Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.fileInput)
+        layout.addWidget(self.convertSelection, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.videoOption, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.setCentralWidget(central)
+
+    def _handleFileSelected(self, path: str):
+        self.convertSelection.setSource(File.from_path(path))
+        self.convertSelection.show()
+
+    def _handleConvertOptionSelected(self):
+        self.videoOption.show()
+

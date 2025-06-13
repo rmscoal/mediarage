@@ -38,7 +38,7 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import Qt, QSize, QRegularExpression
 from PySide6.QtGui import QRegularExpressionValidator
-from PySide6.QtWidgets import QWidget, QGridLayout, QComboBox, QLineEdit, QVBoxLayout
+from PySide6.QtWidgets import QPushButton, QWidget, QGridLayout, QComboBox, QLineEdit, QVBoxLayout
 
 from components.ui import Text
 
@@ -51,8 +51,8 @@ class VideoOptions(QWidget):
     currRow: int = 0
     currColumn: int = 0
 
-    def __init__(self, /, parent=None):
-        super(VideoOptions, self).__init__(parent)
+    def __init__(self, *args, **kwargs):
+        super(VideoOptions, self).__init__(*args, **kwargs)
 
         layout = QGridLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignJustify)
@@ -74,6 +74,10 @@ class VideoOptions(QWidget):
         self.currRow += 1
         self.currColumn = 0
         TrimOption(parent=self)
+
+        # Convert Button
+        button = QPushButton("Convert")
+        layout.addWidget(button, self.currRow, 0, 1, 4)
 
 
 class VideoOptionForm(QWidget):

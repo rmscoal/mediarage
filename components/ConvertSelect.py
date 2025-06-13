@@ -8,12 +8,12 @@ from components.ui import Text
 from constant.File import File, Image, Video
 
 
-@dataclass
-class ConvertSelectItem:
-    source: File
-    target: File
+class ConvertSelect(QWidget):
+    @dataclass
+    class SelectedItem:
+        source: File
+        target: File
 
-class ConvertSelection(QWidget):
     @dataclass
     class Option:
         key: str
@@ -52,10 +52,10 @@ class ConvertSelection(QWidget):
     }
 
     # Signal
-    onSelected = Signal(object)
+    onSelected = Signal(SelectedItem, name="convert_selection_on_selected")
 
-    def __init__(self, parent=None):
-        super(ConvertSelection, self).__init__(parent)
+    def __init__(self, *args, **kwargs):
+        super(ConvertSelect, self).__init__(*args, **kwargs)
 
         self.sourceComboBox = QComboBox(editable=True)
         self.targetComboBox = QComboBox(editable=True)
@@ -83,11 +83,20 @@ class ConvertSelection(QWidget):
             curr += len(option.children) + 1
         self.targetComboBox.clear()
 
+    def _findIndexFor(self, value: str) -> int:
+        index = 0
+        for option in self.OPTIONS:
+            index += 1
+            for child in option.children:
+                if child == value:
+                    return index
+                index += 1
+        return -1
+
     def setSource(self, fileType: File | None) -> None:
         if not isinstance(fileType, File):
-            print(fileType)
             return
-        self.sourceComboBox.setCurrentText(fileType.value)
+        self.sourceComboBox.setCurrentIndex(self._findIndexFor(fileType.value))
 
     @property
     def selectedSource(self) -> Union[File, None]:
@@ -110,9 +119,6 @@ class ConvertSelection(QWidget):
         return selected
 
     def _onChangeSource(self, _: int) -> None:
-        """
-        As the right combo box has been chosen, we adjust the left combobox.
-        """
         self.targetComboBox.clear()
         if self.selectedSource is None:
             return
@@ -127,7 +133,7 @@ class ConvertSelection(QWidget):
     def _onChangeTarget(self, _: int) -> None:
         if self.selectedSource is None or self.selectedTarget is None:
             return
-        self.onSelected.emit(ConvertSelectItem(
+        self.onSelected.emit(ConvertSelect.SelectedItem(
             source=self.selectedSource,
             target=self.selectedTarget,
         ))
