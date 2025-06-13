@@ -33,7 +33,7 @@
 # | `-t 00:00:10`  | Duration (cut to first 10 seconds)           |
 # | `-ss 00:00:05` | Start time (skip first 5 seconds)            |
 
-from typing import List, Optional
+from typing import cast, List, Optional
 from dataclasses import dataclass
 
 from PySide6.QtCore import Qt, QSize, QRegularExpression
@@ -106,7 +106,7 @@ class VideoOptionForm(QWidget):
             inputContainerLayout.addWidget(helper)
 
         if autoLayout and self.parent():
-            parent = self.parent()
+            parent = cast(QWidget, self.parent())
             if not isinstance(parent, VideoOptions):
                 raise ValueError("Parent must be a VideoOptions instance")
 
@@ -130,7 +130,7 @@ class VideoOptionForm(QWidget):
 
 
 class CRFOption(VideoOptionForm):
-    input: QComboBox
+    input: QComboBox   # type: ignore
 
     def __init__(self, parent=None):
         super().__init__(parent,
@@ -267,7 +267,7 @@ class ResolutionOption(VideoOptionForm):
         # "3840x3840 (1:1)"
     ]
 
-    input: QComboBox
+    input: QComboBox   # type: ignore
 
     def __init__(self, parent=None):
         super().__init__(parent, "Resolution")
@@ -297,7 +297,7 @@ class PresetOption(VideoOptionForm):
         "veryslow",
     ]
 
-    input: QComboBox
+    input: QComboBox   # type: ignore
 
     def __init__(self, parent=None):
         super().__init__(parent, "Preset")
@@ -327,7 +327,7 @@ class FrameRateOption(VideoOptionForm):
         5,
     ]
 
-    input: QComboBox
+    input: QComboBox   # type: ignore
 
     def __init__(self, parent=None):
         super().__init__(parent, "Frame Rate")
@@ -347,13 +347,13 @@ class FrameRateOption(VideoOptionForm):
 
 
 class TrimOption(VideoOptionForm):
-    input: None
+    input: None   # type: ignore
 
     def __init__(self, parent=None):
         super().__init__(parent, "Trim", autoLayout=False)
 
         # Clear the inherited input
-        self.input = None
+        self.input = None   # type: ignore
 
         self.trimStart = QLineEdit()
         self.trimStart.setPlaceholderText("HH:MM:SS")
