@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QApplication
-from pages.Main import Main
 
 app = QApplication([])
+
+from pages.Main import Main
 
 window = Main()
 window.show()

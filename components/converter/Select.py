@@ -8,62 +8,62 @@ from components.ui import Text
 from constant.File import File, Image, Video
 
 
-class ConvertSelect(QWidget):
+class Select(QWidget):
     @dataclass
-    class SelectedItem:
+    class Selected:
         source: File
         target: File
 
     @dataclass
-    class Option:
+    class Item:
         key: str
         children: List[str]
 
-    OPTIONS: List[Option] = [
-        Option(key="Image", children=[image.value for image in Image]),
-        Option(key="Video", children=[video.value for video in Video]),
+    ITEMS: List[Item] = [
+        Item(key="Image", children=[image.value for image in Image]),
+        Item(key="Video", children=[video.value for video in Video]),
     ]
 
-    PAIRS: Dict[File, List[Option]] = {
+    PAIRS: Dict[File, List[Item]] = {
         # Images
         Image.JPEG: [
-            Option(key="Image", children=[Image.PNG.value]),
+            Item(key="Image", children=[Image.PNG.value]),
         ],
         Image.JPG: [
-            Option(key="Image", children=[Image.JPEG.value, Image.PNG.value]),
+            Item(key="Image", children=[Image.JPEG.value, Image.PNG.value]),
         ],
 
         # Videos
         Video.AVI: [
-            Option(key="Video", children=[Video.MOV.value, Video.MP4.value, Video.MPEG.value]),
+            Item(key="Video", children=[Video.MOV.value, Video.MP4.value, Video.MPEG.value]),
         ],
         Video.MOV: [
-            Option(key="Image", children=[Image.GIF.value]),
-            Option(key="Video", children=[Video.MP4.value, Video.MPEG.value])
+            Item(key="Image", children=[Image.GIF.value]),
+            Item(key="Video", children=[Video.MP4.value, Video.MPEG.value])
         ],
         Video.MP4: [
-            Option(key="Image", children=[Image.GIF.value]),
-            Option(key="Video", children=[Video.MOV.value, Video.MPEG.value])
+            Item(key="Image", children=[Image.GIF.value]),
+            Item(key="Video", children=[Video.MOV.value, Video.MPEG.value])
         ],
         Video.MPEG: [
-            Option(key="Image", children=[Image.GIF.value]),
-            Option(key="Video", children=[Video.MOV.value, Video.MP4.value])
+            Item(key="Image", children=[Image.GIF.value]),
+            Item(key="Video", children=[Video.MOV.value, Video.MP4.value])
         ],
     }
 
     # Signal
-    onSelected = Signal(SelectedItem, name="convert_selection_on_selected")
+    onSelected = Signal(Selected, name="on_converter_selected_item")
 
     def __init__(self, *args, **kwargs):
-        super(ConvertSelect, self).__init__(*args, **kwargs)
+        super(Select, self).__init__(*args, **kwargs)
 
         self.sourceComboBox = QComboBox(editable=True)
         self.targetComboBox = QComboBox(editable=True)
-        self._initOptions()
+        self.__initItems()
         self.sourceComboBox.setCurrentIndex(-1)
         self.targetComboBox.setCurrentIndex(-1)
-        self.sourceComboBox.currentIndexChanged.connect(self._onChangeSource)
-        self.targetComboBox.currentIndexChanged.connect(self._onChangeTarget)
+        self.sourceComboBox.currentIndexChanged.connect(self.__onChangeSource)
+        self.targetComboBox.currentIndexChanged.connect(self.__onChangeTarget)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -74,18 +74,23 @@ class ConvertSelect(QWidget):
         layout.addWidget(self.targetComboBox)
         self.setLayout(layout)
 
-    def _initOptions(self) -> None:
+    def __initItems(self) -> None:
         curr = 0
-        for option in self.OPTIONS:
+        for option in self.ITEMS:
             self.sourceComboBox.addItem(option.key)
             self.sourceComboBox.model().item(curr).setEnabled(False) # type: ignore
             self.sourceComboBox.addItems(option.children)
             curr += len(option.children) + 1
         self.targetComboBox.clear()
 
-    def _findIndexFor(self, value: str) -> int:
+    def setSource(self, fileType: File | None) -> None:
+        if not isinstance(fileType, File):
+            return
+        self.sourceComboBox.setCurrentIndex(self.__findIndexFor(fileType.value))
+
+    def __findIndexFor(self, value: str) -> int:
         index = 0
-        for option in self.OPTIONS:
+        for option in self.ITEMS:
             index += 1
             for child in option.children:
                 if child == value:
@@ -93,13 +98,8 @@ class ConvertSelect(QWidget):
                 index += 1
         return -1
 
-    def setSource(self, fileType: File | None) -> None:
-        if not isinstance(fileType, File):
-            return
-        self.sourceComboBox.setCurrentIndex(self._findIndexFor(fileType.value))
-
     @property
-    def selectedSource(self) -> Union[File, None]:
+    def source(self) -> Union[File, None]:
         idx = self.sourceComboBox.currentIndex()
         if idx < 0:
             return None
@@ -109,7 +109,7 @@ class ConvertSelect(QWidget):
         return selected
 
     @property
-    def selectedTarget(self) -> Union[File, None]:
+    def target(self) -> Union[File, None]:
         idx = self.targetComboBox.currentIndex()
         if idx < 0:
             return None
@@ -118,22 +118,25 @@ class ConvertSelect(QWidget):
         )
         return selected
 
-    def _onChangeSource(self, _: int) -> None:
+    def __onChangeSource(self, _: int) -> None:
         self.targetComboBox.clear()
-        if self.selectedSource is None:
+        if self.source is None:
             return
         curr = 0
-        for option in self.PAIRS[self.selectedSource]:
+        for option in self.PAIRS[self.source]:
             self.targetComboBox.addItem(option.key)
             self.targetComboBox.model().item(curr).setEnabled(False) # type: ignore
             self.targetComboBox.addItems(option.children)
             curr += len(option.children) + 1
+        self.sourceComboBox.clearFocus()
         self.targetComboBox.setCurrentIndex(-1)
+        self.targetComboBox.setFocus()
 
-    def _onChangeTarget(self, _: int) -> None:
-        if self.selectedSource is None or self.selectedTarget is None:
+    def __onChangeTarget(self, _: int) -> None:
+        if self.source is None or self.target is None:
             return
-        self.onSelected.emit(ConvertSelect.SelectedItem(
-            source=self.selectedSource,
-            target=self.selectedTarget,
+        self.onSelected.emit(Select.Selected(
+            source=self.source,
+            target=self.target,
         ))
+        self.targetComboBox.clearFocus()

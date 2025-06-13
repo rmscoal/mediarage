@@ -11,7 +11,8 @@ from util.system import get_home_directory
 
 
 class FileInput(QWidget):
-    MIN_VIEW_SIZE = QSize(480, 270)
+    MIN_VIEW_SIZE = QSize(680, 380)
+    MIN_PLAYER_SIZE = QSize(480, 270)
 
     # Videos
     media: QMediaPlayer
@@ -36,8 +37,8 @@ class FileInput(QWidget):
 
         self.video = QVideoWidget()
         self.media.setVideoOutput(self.video)
-        self.video.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # type: ignore
-        self.video.setMinimumSize(self.MIN_VIEW_SIZE)
+        self.video.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)  # type: ignore
+        self.video.setFixedSize(self.MIN_PLAYER_SIZE)
         self.video.hide()
 
         self.image = QLabel()
@@ -106,4 +107,3 @@ class FileInput(QWidget):
         else:
             # TODO: Add warning dialog
             pass
-
